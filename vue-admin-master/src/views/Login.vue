@@ -26,7 +26,7 @@
                 logining: false,
                 ruleForm2: {
                     account: 'admin',
-                    checkPass: '123456'
+                    checkPass: 'admin'
                 },
                 rules2: {
                     account: [
@@ -54,7 +54,7 @@
                         //NProgress.start();
                         var loginParams = {name: this.ruleForm2.account, password: this.ruleForm2.checkPass};
 
-                        this.$http.post("/aigou/employee/employee/login", loginParams).then(
+                        this.$http.post("/employee/employee/login", loginParams).then(
                             d => {
                                 this.logining = false;
                                 //NProgress.done();
@@ -65,6 +65,8 @@
                                         type: 'error'
                                     });
                                 } else {
+                                    //如果object为null 则不能转换 user为空就进不去，一直在登录页面
+                                    object = {"name":"admin"};
                                     sessionStorage.setItem('user', JSON.stringify(object));
                                     this.$router.push({path: '/table'});
                                 }

@@ -9,6 +9,8 @@ import Page4 from './views/nav2/Page4.vue'
 import Page5 from './views/nav2/Page5.vue'
 import Page6 from './views/nav3/Page6.vue'
 import echarts from './views/charts/echarts.vue'
+import Brand from './views/product/Brand.vue'
+import ProductType from './views/product/ProductType.vue'
 
 let routes = [
     {
@@ -30,7 +32,7 @@ let routes = [
         leaf: true,//只有一个节点
         iconCls: 'fa fa-bar-chart',
         children: [
-            { path: '/echarts', component: echarts, name: '首页' }
+            {path: '/echarts', component: echarts, name: '首页'}
         ]
     },
     {
@@ -39,11 +41,11 @@ let routes = [
         name: '商品模块',
         iconCls: 'el-icon-message',//图标样式class
         children: [
-            { path: '/main', component: Main, name: '商品品牌', hidden: true },
-            { path: '/table', component: Table, name: '商品类型' },
-            { path: '/form', component: Form, name: '商品模板' },
-            { path: '/user', component: user, name: '商品规格' },
-            { path: '/page4', component: Page4, name: '商品管理' },
+            {path: '/brand', component: Brand, name: '商品品牌'},
+            {path: '/ProductType', component: ProductType, name: '商品类型'},
+            {path: '/form', component: Form, name: '商品模板'},
+            {path: '/user', component: user, name: '商品规格'},
+            {path: '/page4', component: Page4, name: '商品管理'},
         ]
     },
     {
@@ -52,8 +54,8 @@ let routes = [
         name: '系统管理',
         iconCls: 'fa fa-id-card-o',
         children: [
-            { path: '/page4', component: Page4, name: '员工管理' },
-            { path: '/page5', component: Page5, name: '部门管理' }
+            {path: '/page4', component: Page4, name: '员工管理'},
+            {path: '/page5', component: Page5, name: '部门管理'}
         ]
     },
     {
@@ -62,13 +64,13 @@ let routes = [
         name: '营销管理',
         iconCls: 'fa fa-address-card',
         children: [
-            { path: '/page6', component: Page6, name: '营销活动管理' }
+            {path: '/page6', component: Page6, name: '营销活动管理'}
         ]
     },
     {
         path: '*',
         hidden: true,
-        redirect: { path: '/404' }
+        redirect: {path: '/404'}
     }
 ];
 

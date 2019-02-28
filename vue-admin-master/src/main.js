@@ -13,7 +13,8 @@ import routes from './routes'
 //import Mock from './mock'
 import axios from 'axios'
 //Mock.bootstrap();
-axios.defaults.baseURL='https://www.easy-mock.com/mock/5c74cb16261e0e3c3307e44c/employee';
+//axios.defaults.baseURL='https://www.easy-mock.com/mock/5c74cb16261e0e3c3307e44c/employee';
+axios.defaults.baseURL='http://127.0.0.1:9527/aigou';
 Vue.prototype.$http = axios
 Vue.config.productionTip = false
 
