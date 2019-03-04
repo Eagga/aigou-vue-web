@@ -68,7 +68,7 @@
                                     //如果object为null 则不能转换 user为空就进不去，一直在登录页面
                                     object = {"name":"admin"};
                                     sessionStorage.setItem('user', JSON.stringify(object));
-                                    this.$router.push({path: '/table'});
+                                    this.$router.push({path: '/brand'});
                                 }
                             });
                     } else {
