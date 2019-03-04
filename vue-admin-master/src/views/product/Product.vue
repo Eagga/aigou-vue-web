@@ -136,9 +136,9 @@
                     productExt: {"description": "", "richContent": ""}
                 },
                 defaultProps: {
-                    parent: 'pid',   // 父级唯一标识
+                    parent: 'pid',        // 父级唯一标识
                     value: 'id',          // 唯一标识
-                    label: 'name',       // 标签显示
+                    label: 'name',        // 标签显示
                     children: 'children', // 子级
                 },
                 // 数据列表
