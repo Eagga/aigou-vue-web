@@ -30,7 +30,8 @@ const router = new VueRouter({
   routes
 })
 
-router.beforeEach((to, from, next) => {
+//注释掉无需验证登录
+/*router.beforeEach((to, from, next) => {
   //NProgress.start();
   if (to.path == '/login') {
     sessionStorage.removeItem('user');
@@ -41,7 +42,7 @@ router.beforeEach((to, from, next) => {
   } else {
     next()
   }
-})
+})*/
 
 //router.afterEach(transition => {
 //NProgress.done();

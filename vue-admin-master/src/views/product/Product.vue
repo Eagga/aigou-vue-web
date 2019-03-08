@@ -12,11 +12,24 @@
                 <el-form-item>
                     <el-button type="primary" @click="handleAdd">新增</el-button>
                 </el-form-item>
+                <el-form-item>
+                    <el-button type="primary" @click="managerViewProperties">显示属性管理</el-button>
+                </el-form-item>
+                <el-form-item>
+                    <el-button type="primary" @click="managerSkuProperties">SKU属性管理</el-button>
+                </el-form-item>
+                <el-form-item>
+                    <el-button type="primary" @click="onSale">上架</el-button>
+                </el-form-item>
+                <el-form-item>
+                    <el-button type="primary" @click="offSale">下架</el-button>
+                </el-form-item>
             </el-form>
         </el-col>
 
         <!--列表-->
         <el-table :data="products" highlight-current-row v-loading="listLoading" @selection-change="selsChange"
+                  @row-click="rowClick"
                   style="width: 100%;">
             <el-table-column type="selection" width="55">
             </el-table-column>
@@ -30,8 +43,19 @@
             </el-table-column>
             <el-table-column prop="offSaleTimeStr" label="下架时间" min-width="200" sortable>
             </el-table-column>
-            <el-table-column prop="state" label="状态" min-width="120" :formatter="formatState" sortable>
+
+            <el-table-column prop="state" label="状态" min-width="120" sortable>
+                <template slot-scope="scope">
+                    <div v-if="scope.row.state ==1" slot="reference" class="name-wrapper">
+                        <el-tag type="success" size="medium" class="stateStyle">上架</el-tag>
+                    </div>
+                    <div v-else-if="scope.row.state ==0" slot="reference" class="name-wrapper">
+                        <el-tag type="danger" size="medium">下架</el-tag>
+                    </div>
+                </template>
             </el-table-column>
+
+
             <el-table-column label="操作" width="200">
                 <template scope="scope">
                     <el-button size="small" @click="handleEdit(scope.$index, scope.row)">编辑</el-button>
@@ -87,6 +111,59 @@
                 <el-button type="primary" @click.native="editSubmit" :loading="editLoading">提交</el-button>
             </div>
         </el-dialog>
+
+        <!--显示属性-->
+        <el-dialog title="显示属性编辑" v-model="ViewPropertiesVisible" :close-on-click-modal="false">
+            <el-card class="box-card">
+                <div v-for="p in viewProperties" :key="p" class="text item">
+                    {{ p.specName }}:
+                    <el-input v-model="p.value" auto-complete="off"></el-input>
+                </div>
+            </el-card>
+            <div slot="footer" class="dialog-footer">
+                <el-button @click.native="ViewPropertiesVisible = false">取消</el-button>
+                <el-button type="primary" @click.native="viewPropertiesSubmit" :loading="editLoading">提交</el-button>
+            </div>
+        </el-dialog>
+
+        <!--sku属性-->
+        <el-dialog title="sku属性编辑" v-model="SkuPropertiesVisible" :close-on-click-modal="false">
+            <el-card class="box-card">
+                <div v-for="p in skuProperties" :key="p" class="text item">
+                    {{ p.specName }}:
+                    <div v-for="i in p.skuValues.length+1" :key="i">
+                        <el-input v-model="p.skuValues[i-1]" auto-complete="off" style="width: 600px"></el-input>
+                        <el-button type="primary" icon="el-icon-delete" @click="p.skuValues.splice(i-1,1)">移除
+                        </el-button>
+                    </div>
+                </div>
+            </el-card>
+            <!--动态表格-->
+            <el-table :data="skuDatas">
+                <!--cols一堆列,col哪一列-->
+                <template v-for="(col ,index) in cols">
+                    <el-table-column :prop="col.prop" sortable :label="col.label"
+                                     v-if="['price','availableStock'].includes(col.prop)">
+                        <!--scope:作用域的问题-->
+                        <template scope="scope">
+                            <el-input auto-complete="off" v-model="skuDatas[scope.$index].price" style="width: 100px"
+                                      v-if="'price'===col.prop"/>
+                            <el-input auto-complete="off" v-model="skuDatas[scope.$index].availableStock"
+                                      style="width: 100px" v-if="'availableStock'===col.prop"/>
+                        </template>
+                    </el-table-column>
+                    <!--只做显示-->
+                    <el-table-column :prop="col.prop" sortable :label="col.label"
+                                     v-if="!['price','availableStock'].includes(col.prop)">
+                    </el-table-column>
+                </template>
+            </el-table>
+
+            <div slot="footer" class="dialog-footer">
+                <el-button @click.native="SkuPropertiesVisible = false">取消</el-button>
+                <el-button type="primary" @click.native="skuPropertiesSubmit" :loading="editLoading">提交</el-button>
+            </div>
+        </el-dialog>
     </section>
 </template>
 
@@ -119,6 +196,8 @@
                 sels: [],//列表选中列
                 fileList2: [],
                 formVisible: false,//编辑界面是否显示
+                ViewPropertiesVisible: false,//显示属性
+                SkuPropertiesVisible: false,
                 editLoading: false,
                 formRules: {
                     name: [
@@ -133,7 +212,7 @@
                     subName: '',
                     brandId: '',
                     productTypeId: '',
-                    productExt: {"description": "", "richContent": ""}
+                    productExt: {}
                 },
                 defaultProps: {
                     parent: 'pid',        // 父级唯一标识
@@ -142,14 +221,172 @@
                     children: 'children', // 子级
                 },
                 // 数据列表
-                productTypes: []
+                productTypes: [],
+                currentRow: null,
+                viewProperties: [],
+                skuProperties: [],
+                skuDatas: []
             }
         },
-        methods: { //方法\
-            onEditorReady(editor) {
+        watch: {
+            skuProperties: {
+                handler(curVal, oldVal) {
+                    // 过滤掉用户没有填写数据的规格参数
+                    const arr = this.skuProperties.filter(s => s.skuValues.length > 0);
+                    // 通过reduce进行累加笛卡尔积
+                    var skus = arr.reduce((last, spec) => {
+                        const result = [];
+                        last.forEach(o => {
+                            spec.skuValues.forEach(option => {
+                                const obj = {};
+                                Object.assign(obj, o);
+                                obj[spec.specName] = option;
+                                result.push(obj);
+                            })
+                        });
+                        return result
+                    }, [{}]);
+                    //添加不存在的列
+                    skus.forEach(function (item) {
+                        item['price'] = '';
+                        item['availableStock'] = '';
+                    });
+                    this.skuDatas = skus;
+
+                    let headers = [];
+                    Object.keys(this.skuDatas[0]).forEach(sku => {
+                        let value = sku;
+                        if (sku == 'price') {
+                            value = '价格'
+                        }
+                        if (sku == 'availableStock') {
+                            value = '库存'
+                        }
+                        let col = {"label": value, "prop": sku};
+                        headers.push(col);
+                    });
+                    this.cols = headers;
+                },
+                deep: true
+            }
+        },
+        methods: { //方法
+            //上架操作
+            onSale() {
+                if (this.currentRow) {
+                    var ids = this.sels.map(item => item.id).toString();
+                    //optType:操作的类型:  1 发送的上架操作; 2:发送的是下架操作
+                    let params = {"ids": ids, "optType": 1};
+                    let productSaleUrl = "/product/product/productSale";
+                    this.$http.get(productSaleUrl, params).then(
+                        res => {
+                            if (res.data.success) {
+                                this.$message({
+                                    message: res.data.msg,
+                                    type: 'success'
+                                });
+                            } else {
+                                this.$message({
+                                    message: res.data.msg,
+                                    type: 'error'
+                                });
+                            }
+                        })
+                } else {
+                    this.$message({
+                        message: '请选择需要上架的商品！',
+                        type: 'warning'
+                    });
+                    return;
+                }
             },
-            formatState: function (row, column) {
-                return row.state === 1 ? '上架' : '下架'
+            //下架操作
+            offSale() {
+
+            },
+            //sku属性管理
+            managerSkuProperties() {
+                if (this.currentRow) {
+                    this.SkuPropertiesVisible = true;//弹出对话框
+                    let productTypeId = this.currentRow.productTypeId;
+                    let skuPropertiesUrl = "/product/product/skuProperties/" + productTypeId;
+                    this.$http.get(skuPropertiesUrl).then(
+                        res => {
+                            this.skuProperties = res.data;
+                        })
+                } else {
+                    this.$message({
+                        message: '请选中后进行操作!',
+                        type: 'warning'
+                    });
+                    return;
+                }
+            },
+            //sku属性提交
+            skuPropertiesSubmit() {
+                let productId = this.currentRow.id;
+                let params = {"productId": productId, "skuProperties": this.skuProperties, "skuDatas": this.skuDatas};
+                this.$http.post("/product/product/skuProperties", params).then(
+                    res => {
+                        if (res.data.success) {
+                            this.$message({
+                                message: res.data.msg,
+                                type: 'success'
+                            });
+                        } else {
+                            this.$message({
+                                message: res.data.msg,
+                                type: 'error'
+                            });
+                        }
+                        this.SkuPropertiesVisible = false;
+                    }
+                )
+            },
+            //显示属性提交
+            viewPropertiesSubmit() {
+                let productId = this.currentRow.id;
+                let params = {"productId": productId, "viewProperties": this.viewProperties};
+                this.$http.post("/product/product/viewProperties", params).then(
+                    res => {
+                        if (res.data.success) {
+                            this.$message({
+                                message: res.data.msg,
+                                type: 'success'
+                            });
+                        } else {
+                            this.$message({
+                                message: res.data.msg,
+                                type: 'error'
+                            });
+                        }
+                        this.ViewPropertiesVisible = false;
+                    }
+                )
+            },
+            //显示属性管理
+            managerViewProperties() {
+                if (this.currentRow) {
+                    this.ViewPropertiesVisible = true;//弹出对话框
+                    let productTypeId = this.currentRow.productTypeId;
+                    let productId = this.currentRow.id;
+                    let viewPropertiesUrl = "/product/product/viewProperties/" + productTypeId + "/" + productId;
+                    this.$http.get(viewPropertiesUrl).then(
+                        res => {
+                            this.viewProperties = res.data;
+                        })
+                } else {
+                    this.$message({
+                        message: '请选中后进行操作!',
+                        type: 'warning'
+                    });
+                    return;
+                }
+            },
+            rowClick(row, column, event) {
+                this.currentRow = row;
+            },
+            onEditorReady(editor) {
             },
             handleSuccess(response, file, fileList) {
                 //上传成功回调
@@ -268,10 +505,11 @@
                     subName: '',
                     beandId: '',
                     productTypeId: '',
-                    productExt: {"description": "", "richContent": ""}
+                    //productExt: {"description": "", "richContent": ""}
+                    productExt: {}
                 };
             },
-            //编辑
+            //提交
             editSubmit: function () {
                 this.$refs.form.validate((valid) => {
                     if (valid) {

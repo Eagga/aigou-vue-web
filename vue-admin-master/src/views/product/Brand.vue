@@ -73,17 +73,11 @@
                 <el-form-item label="排序号" prop="sortIndex">
                     <el-input v-model="form.sortIndex" auto-complete="off"></el-input>
                 </el-form-item>
-                <el-form-item label="类型" prop="productTypeId">
-                    <el-input v-model="form.productTypeId" auto-complete="off"></el-input>
-                    <div class="block">
-                        <el-cascader
-                                expand-trigger="hover"
-                                :options="options"
-                                v-model="form.productTypeId"
-                                @change="handleChange">
-                        </el-cascader>
-                    </div>
+
+                <el-form-item label="商品分类" prop="productTypeId">
+                    <select-tree width="200" :options="productTypes" v-model="form.productTypeId"/>
                 </el-form-item>
+
                 <el-form-item label="描述" prop="description">
                     <el-input v-model="form.description" auto-complete="off"></el-input>
                 </el-form-item>
@@ -97,7 +91,11 @@
 </template>
 
 <script>
+    import SelectTree from '@/components/SelectTree.vue';
     export default {
+        components: {
+            SelectTree
+        },
         data() { //数据
             return {
                 filters: {
@@ -125,11 +123,29 @@
                     sortIndex: '',
                     description: '',
                     logo: '',
-                    productTypeId: 0
-                }
+                    productTypeId: '',
+                },
+                defaultProps: {
+                    parent: 'pid',        // 父级唯一标识
+                    value: 'id',          // 唯一标识
+                    label: 'name',        // 标签显示
+                    children: 'children', // 子级
+                },
+                productTypes:[]//商品分类树形
             }
         },
         methods: { //方法\
+            //商品分类下拉树
+            getProductTypes() {
+                //加载
+                this.listLoading = true;
+                //异步请求:
+                this.$http.get("/product/productType/treeData")
+                    .then(res => {
+                        this.listLoading = false;
+                        this.productTypes = res.data;
+                    });
+            },
             handleSuccess(response, file, fileList) {
                 //上传成功回调
                 this.form.logo = response.object;
@@ -229,7 +245,7 @@
                     sortIndex: '',
                     description: '',
                     logo: '',
-                    productTypeId: 0
+                    productTypeId: ''
                 };
             },
             //编辑
@@ -281,6 +297,7 @@
         }, // $(function()) 加载完毕后执行
         mounted() {
             this.getBrands();
+            this.getProductTypes();
         }
     }
 
